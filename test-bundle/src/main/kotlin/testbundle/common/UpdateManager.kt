@@ -11,7 +11,7 @@ import kotlinx.coroutines.withContext
 class UpdateManager(
     private val currentBuildNumber: Long,
     private val baseUrl: String = "https://updates.example.com/",
-    private val publicKey: String = "",
+    private val publicKey: String = "MCowBQYDK2VwAyEALfvWpE5MbxS87YZvixsKxuSS2QGGSoUJao7idEABK0Q=",
 ) {
     private val config = BundleUpdaterConfig(
         appId = "io.runwork.testbundle",
