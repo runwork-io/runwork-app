@@ -28,6 +28,3 @@ kotlin {
     }
 }
 
-tasks.named("jvmTest") {
-    dependsOn(":demo-bundle:createBundle")
-}

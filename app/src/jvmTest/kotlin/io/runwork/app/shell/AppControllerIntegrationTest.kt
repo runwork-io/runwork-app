@@ -65,7 +65,7 @@ class AppControllerIntegrationTest {
         try {
             val controller = AppController(
                 window = window,
-                config = AppConfig.DEFAULT,
+                config = testBundleConfig(),
                 scope = scope,
                 launchAction = { valid -> launchedValidation = valid },
             )
@@ -89,7 +89,7 @@ class AppControllerIntegrationTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Swing)
 
         try {
-            val config = testConfigForDir(emptyDir)
+            val config = emptyDirConfig(emptyDir)
 
             val controller = AppController(
                 window = window,
@@ -117,7 +117,7 @@ class AppControllerIntegrationTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Swing)
 
         try {
-            val config = testConfigForDir(emptyDir, initialRetryDelayMs = 4_000L)
+            val config = emptyDirConfig(emptyDir, initialRetryDelayMs = 4_000L)
 
             val controller = AppController(
                 window = window,
@@ -153,7 +153,7 @@ class AppControllerIntegrationTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Swing)
 
         try {
-            val config = testConfigForDir(emptyDir)
+            val config = emptyDirConfig(emptyDir)
 
             val controller = AppController(
                 window = window,
@@ -193,7 +193,7 @@ class AppControllerIntegrationTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Swing)
 
         try {
-            val config = testConfigForDir(emptyDir)
+            val config = emptyDirConfig(emptyDir)
 
             val controller = AppController(
                 window = window,
@@ -237,16 +237,32 @@ class AppControllerIntegrationTest {
         }
     }
 
-    private fun testConfigForDir(
+    private fun testBundleConfig(): AppConfig {
+        val testBundleDir = File("../test-bundle").canonicalFile
+        require(testBundleDir.exists()) { "test-bundle directory not found at ${testBundleDir.absolutePath}" }
+        return AppConfig(
+            baseUrl = "file://${testBundleDir.absolutePath}/",
+            publicKey = TEST_PUBLIC_KEY,
+            shellVersion = 1,
+            mainClass = "demo.Main",
+            appId = "io.runwork.app.desktop",
+        )
+    }
+
+    private fun emptyDirConfig(
         dir: File,
         initialRetryDelayMs: Long = 2_000L,
     ) = AppConfig(
         baseUrl = "file://${dir.absolutePath}/",
-        publicKey = AppConfig.DEFAULT.publicKey,
+        publicKey = TEST_PUBLIC_KEY,
         shellVersion = 1,
         mainClass = "demo.Main",
-        appId = "io.runwork.moscow.test",
+        appId = "io.runwork.app.desktop.test",
         initialRetryDelayMs = initialRetryDelayMs,
         maxRetryDelayMs = 60_000L,
     )
+
+    companion object {
+        private const val TEST_PUBLIC_KEY = "MCowBQYDK2VwAyEALfvWpE5MbxS87YZvixsKxuSS2QGGSoUJao7idEABK0Q="
+    }
 }

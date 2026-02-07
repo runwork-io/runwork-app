@@ -27,7 +27,7 @@ import kotlin.math.min
 
 class AppController(
     private val window: AppWindow,
-    private val config: AppConfig = AppConfig.DEFAULT,
+    private val config: AppConfig,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Swing),
     private val launchAction: ((BundleValidationResult.Valid) -> Unit)? = null,
 ) {
