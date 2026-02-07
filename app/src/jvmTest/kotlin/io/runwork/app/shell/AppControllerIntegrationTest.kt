@@ -9,6 +9,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.swing.Swing
 import java.io.File
 import javax.swing.SwingUtilities
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import javax.swing.WindowConstants
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -117,7 +119,7 @@ class AppControllerIntegrationTest {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Swing)
 
         try {
-            val config = emptyDirConfig(emptyDir, initialRetryDelayMs = 4_000L)
+            val config = emptyDirConfig(emptyDir, initialRetryDelay = 4.seconds)
 
             val controller = AppController(
                 window = window,
@@ -251,15 +253,15 @@ class AppControllerIntegrationTest {
 
     private fun emptyDirConfig(
         dir: File,
-        initialRetryDelayMs: Long = 2_000L,
+        initialRetryDelay: Duration = 2.seconds,
     ) = AppConfig(
         baseUrl = "file://${dir.absolutePath}/",
         publicKey = TEST_PUBLIC_KEY,
         shellVersion = 1,
         mainClass = "demo.Main",
         appId = "io.runwork.app.desktop.test",
-        initialRetryDelayMs = initialRetryDelayMs,
-        maxRetryDelayMs = 60_000L,
+        initialRetryDelay = initialRetryDelay,
+        maxRetryDelay = 60.seconds,
     )
 
     companion object {

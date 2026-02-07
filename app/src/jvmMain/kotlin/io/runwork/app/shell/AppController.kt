@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.swing.Swing
 import kotlinx.coroutines.withContext
 import javax.swing.SwingUtilities
-import kotlin.math.min
+import kotlin.time.Duration
 
 class AppController(
     private val window: AppWindow,
@@ -54,7 +54,7 @@ class AppController(
 
     private var downloadJob: Job? = null
     private var retryJob: Job? = null
-    private var currentRetryDelay = config.initialRetryDelayMs
+    private var currentRetryDelay = config.initialRetryDelay
     private var lastProgressTime = 0L
 
     init {
@@ -176,7 +176,7 @@ class AppController(
                 when (result) {
                     is DownloadResult.Success -> {
                         log("Download successful, build number: ${result.buildNumber}")
-                        currentRetryDelay = config.initialRetryDelayMs
+                        currentRetryDelay = config.initialRetryDelay
                         // Re-validate to get the Valid result needed for launch
                         when (val validationResult = validateWithTiming("Post-download")) {
                             is BundleValidationResult.Valid -> {
@@ -225,7 +225,7 @@ class AppController(
 
     private fun handleDownloadError(message: String) {
         log("Handling error: $message")
-        val retrySeconds = (currentRetryDelay / 1000).toInt()
+        val retrySeconds = currentRetryDelay.inWholeSeconds.toInt()
         log("Will retry in $retrySeconds seconds")
         updateUi(AppUiState.Error(message, retrySeconds))
 
@@ -241,8 +241,8 @@ class AppController(
             }
 
             if (isActive) {
-                currentRetryDelay = min(currentRetryDelay * 2, config.maxRetryDelayMs)
-                log("Retrying download (next delay will be ${currentRetryDelay}ms)...")
+                currentRetryDelay = minOf(currentRetryDelay * 2, config.maxRetryDelay)
+                log("Retrying download (next delay will be $currentRetryDelay)...")
                 startDownload()
             }
         }
@@ -251,7 +251,7 @@ class AppController(
     private fun retryNow() {
         log("Manual retry requested")
         retryJob?.cancel()
-        currentRetryDelay = config.initialRetryDelayMs
+        currentRetryDelay = config.initialRetryDelay
         startDownload()
     }
 
