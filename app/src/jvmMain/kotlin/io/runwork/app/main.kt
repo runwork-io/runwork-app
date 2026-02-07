@@ -9,10 +9,10 @@ import javax.swing.SwingUtilities
 fun main() {
     SwingUtilities.invokeLater {
         val config = AppConfig(
-            baseUrl = "file://${File(System.getProperty("user.home"), ".moscow-demo-bundle").absolutePath}/",
+            baseUrl = "file://${File(System.getProperty("user.home"), ".moscow-test-bundle").absolutePath}/",
             publicKey = "MCowBQYDK2VwAyEALfvWpE5MbxS87YZvixsKxuSS2QGGSoUJao7idEABK0Q=",
             shellVersion = 1,
-            mainClass = "demo.Main",
+            mainClass = "testbundle.bundle1.Main",
             appId = "io.runwork.app.desktop",
         )
         val window = AppWindow()

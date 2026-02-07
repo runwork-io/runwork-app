@@ -34,4 +34,4 @@ plugins {
 }
 
 include(":app")
-include(":demo-bundle")
+include(":test-bundle")

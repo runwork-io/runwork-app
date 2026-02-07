@@ -238,13 +238,13 @@ class AppControllerIntegrationTest {
     }
 
     private fun testBundleConfig(): AppConfig {
-        val testBundleDir = File("../test-bundle").canonicalFile
-        require(testBundleDir.exists()) { "test-bundle directory not found at ${testBundleDir.absolutePath}" }
+        val testBundleDir = File("../bundles/1").canonicalFile
+        require(testBundleDir.exists()) { "bundles/1 directory not found at ${testBundleDir.absolutePath}" }
         return AppConfig(
             baseUrl = "file://${testBundleDir.absolutePath}/",
             publicKey = TEST_PUBLIC_KEY,
             shellVersion = 1,
-            mainClass = "demo.Main",
+            mainClass = "testbundle.bundle1.Main",
             appId = "io.runwork.app.desktop",
         )
     }
