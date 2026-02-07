@@ -2,6 +2,7 @@ import io.runwork.bundle.gradle.BundleCreatorTask
 
 plugins {
     kotlin("jvm")
+    alias(libs.plugins.kotlinSerialization)
 }
 
 buildscript {
