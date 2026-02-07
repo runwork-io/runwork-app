@@ -28,3 +28,11 @@ kotlin {
     }
 }
 
+tasks.register<JavaExec>("runManualUpdateTest") {
+    group = "application"
+    description = "Runs the manual bundle update test"
+    mainClass.set("io.runwork.app.ManualUpdateTestKt")
+    classpath = kotlin.jvm().compilations["main"].runtimeDependencyFiles +
+        kotlin.jvm().compilations["main"].output.allOutputs
+}
+

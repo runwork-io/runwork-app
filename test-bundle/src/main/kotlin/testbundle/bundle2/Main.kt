@@ -1,5 +1,7 @@
 package testbundle.bundle2
 
+import io.runwork.bundle.common.BundleLaunchConfig
+import kotlinx.serialization.json.Json
 import testbundle.common.UpdateManager
 import java.awt.BorderLayout
 import java.awt.Color
@@ -19,9 +21,10 @@ object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         println("[TestBundle] Starting Bundle v2 - Build #2")
+        val config = Json.decodeFromString<BundleLaunchConfig>(args[0])
         SwingUtilities.invokeLater {
             val frame = JFrame("Test Bundle v2")
-            frame.defaultCloseOperation = WindowConstants.EXIT_ON_CLOSE
+            frame.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
             frame.preferredSize = Dimension(400, 300)
 
             val label = JLabel("Bundle v2 - Build #2", SwingConstants.CENTER)
@@ -34,7 +37,7 @@ object Main {
             frame.isVisible = true
 
             val scope = CoroutineScope(SupervisorJob() + Dispatchers.Swing)
-            val updateManager = UpdateManager(currentBuildNumber = 2L)
+            val updateManager = UpdateManager(config)
             updateManager.startBackgroundUpdate(scope) { status ->
                 SwingUtilities.invokeLater {
                     frame.title = "Test Bundle v2 - $status"

@@ -1,5 +1,6 @@
 package testbundle.common
 
+import io.runwork.bundle.common.BundleLaunchConfig
 import io.runwork.bundle.updater.BundleUpdater
 import io.runwork.bundle.updater.BundleUpdaterConfig
 import io.runwork.bundle.updater.result.DownloadResult
@@ -7,20 +8,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.nio.file.Path
 
 class UpdateManager(
-    private val currentBuildNumber: Long,
-    private val baseUrl: String = "https://updates.example.com/",
-    private val publicKey: String = "MCowBQYDK2VwAyEALfvWpE5MbxS87YZvixsKxuSS2QGGSoUJao7idEABK0Q=",
+    private val config: BundleLaunchConfig,
 ) {
-    private val config = BundleUpdaterConfig(
-        appId = "io.runwork.testbundle",
-        baseUrl = baseUrl,
-        publicKey = publicKey,
-        currentBuildNumber = currentBuildNumber,
+    private val updaterConfig = BundleUpdaterConfig(
+        appDataDir = Path.of(config.appDataDir),
+        baseUrl = config.baseUrl,
+        publicKey = config.publicKey,
+        currentBuildNumber = config.currentBuildNumber,
     )
 
-    private val updater = BundleUpdater(config)
+    private val updater = BundleUpdater(updaterConfig)
 
     fun startBackgroundUpdate(scope: CoroutineScope, onResult: (String) -> Unit) {
         scope.launch {
