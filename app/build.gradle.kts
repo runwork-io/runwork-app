@@ -1,45 +1,33 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.composeMultiplatform)
-    alias(libs.plugins.composeCompiler)
-    alias(libs.plugins.composeHotReload)
 }
 
 kotlin {
-    jvm()
+    jvm {
+        mainRun {
+            mainClass = "io.runwork.app.MainKt"
+        }
+    }
 
     sourceSets {
-        commonMain.dependencies {
-            implementation(libs.compose.runtime)
-            implementation(libs.compose.foundation)
-            implementation(libs.compose.material3)
-            implementation(libs.compose.ui)
-            implementation(libs.compose.components.resources)
-            implementation(libs.compose.uiToolingPreview)
-            implementation(libs.androidx.lifecycle.viewmodelCompose)
-            implementation(libs.androidx.lifecycle.runtimeCompose)
-        }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }
         jvmMain.dependencies {
-            implementation(compose.desktop.currentOs)
+            implementation(libs.kotlinx.coroutinesSwing)
+            implementation(libs.bundle.bootstrap)
+            implementation(libs.bundle.updater)
+        }
+        jvmTest.dependencies {
+            implementation(libs.kotlin.test)
+            implementation(libs.kotlin.testJunit)
+            implementation(libs.junit)
+            implementation(libs.kotlinx.coroutinesTest)
             implementation(libs.kotlinx.coroutinesSwing)
         }
     }
 }
 
-
-compose.desktop {
-    application {
-        mainClass = "io.runwork.app.MainKt"
-
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "io.runwork.app"
-            packageVersion = "1.0.0"
-        }
-    }
+tasks.named("jvmTest") {
+    dependsOn(":demo-bundle:createBundle")
 }
