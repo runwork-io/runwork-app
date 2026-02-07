@@ -42,6 +42,7 @@ fun main(args: Array<String>) {
             appId = "io.runwork.app.desktop",
             appDataDir = storageDir.toPath(),
             updateCheckInterval = 5.seconds,
+            enableBackgroundUpdate = false,
         )
         val window = AppWindow()
         val controller = AppController(

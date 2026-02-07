@@ -302,7 +302,9 @@ class AppController(
                 return
             }
         }
-        startBackgroundUpdateService()
+        if (config.enableBackgroundUpdate) {
+            startBackgroundUpdateService()
+        }
     }
 
     private fun startBackgroundUpdateService() {

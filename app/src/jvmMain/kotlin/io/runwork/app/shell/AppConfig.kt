@@ -16,4 +16,5 @@ data class AppConfig(
     val initialRetryDelay: Duration = 2.seconds,
     val maxRetryDelay: Duration = 60.seconds,
     val updateCheckInterval: Duration = 6.hours,
+    val enableBackgroundUpdate: Boolean = true,
 )
