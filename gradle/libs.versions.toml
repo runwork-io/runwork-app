@@ -1,5 +1,6 @@
 [versions]
 androidx-lifecycle = "2.9.6"
+bundle = "0.7.0"
 composeHotReload = "1.0.0"
 composeMultiplatform = "1.10.0"
 junit = "4.13.2"
@@ -20,6 +21,10 @@ compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMul
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 kotlinx-coroutinesSwing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "kotlinx-coroutines" }
+kotlinx-coroutinesTest = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+bundle-bootstrap = { module = "io.runwork:bundle-bootstrap", version.ref = "bundle" }
+bundle-updater = { module = "io.runwork:bundle-updater", version.ref = "bundle" }
+bundle-creator-gradle-task = { module = "io.runwork:bundle-creator-gradle-task", version.ref = "bundle" }
 
 [plugins]
 composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }

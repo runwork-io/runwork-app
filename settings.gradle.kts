@@ -25,6 +25,7 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        maven("https://maven.runwork.io/releases")
     }
 }
 
@@ -33,3 +34,4 @@ plugins {
 }
 
 include(":app")
+include(":test-bundle")
