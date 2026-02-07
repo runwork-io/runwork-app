@@ -1,4 +1,4 @@
-rootProject.name = "delphi"
+rootProject.name = "runwork-app"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
