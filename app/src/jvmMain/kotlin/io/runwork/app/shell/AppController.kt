@@ -3,12 +3,7 @@ package io.runwork.app.shell
 import io.runwork.app.ui.AppWindow
 import io.runwork.bundle.bootstrap.BundleBootstrap
 import io.runwork.bundle.bootstrap.BundleBootstrapConfig
-import io.runwork.bundle.bootstrap.BundleBootstrapProgress
-import io.runwork.bundle.bootstrap.BundleValidationResult
-import io.runwork.bundle.updater.BundleUpdater
-import io.runwork.bundle.updater.BundleUpdaterConfig
-import io.runwork.bundle.updater.download.DownloadProgress
-import io.runwork.bundle.updater.result.DownloadResult
+import io.runwork.bundle.bootstrap.BundleStartEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,18 +16,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.swing.Swing
-import kotlinx.coroutines.withContext
 import javax.swing.SwingUtilities
-import kotlin.time.Duration
 
 class AppController(
     private val window: AppWindow,
     private val config: AppConfig,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Swing),
-    private val launchAction: ((BundleValidationResult.Valid) -> Unit)? = null,
 ) {
-    private val _state = MutableStateFlow<AppUiState>(AppUiState.Checking)
-    val state: StateFlow<AppUiState> = _state.asStateFlow()
+    private val _state = MutableStateFlow<AppUiState?>(null)
+    val state: StateFlow<AppUiState?> = _state.asStateFlow()
 
     private val bootstrapConfig = if (config.appDataDir != null) {
         BundleBootstrapConfig(
@@ -52,26 +44,8 @@ class AppController(
         )
     }
 
-    private val updaterConfig = if (config.appDataDir != null) {
-        BundleUpdaterConfig(
-            appDataDir = config.appDataDir,
-            baseUrl = config.baseUrl,
-            publicKey = config.publicKey,
-            currentBuildNumber = 0L,
-        )
-    } else {
-        BundleUpdaterConfig(
-            appId = config.appId,
-            baseUrl = config.baseUrl,
-            publicKey = config.publicKey,
-            currentBuildNumber = 0L,
-        )
-    }
-
     private val bootstrap = BundleBootstrap(bootstrapConfig)
-    private val updater = BundleUpdater(updaterConfig)
-
-    private var downloadJob: Job? = null
+    private var startJob: Job? = null
     private var retryJob: Job? = null
     private var currentRetryDelay = config.initialRetryDelay
 
@@ -87,7 +61,45 @@ class AppController(
         log("  APP_ID: ${config.appId}")
         log("  SHELL_VERSION: ${config.shellVersion}")
         log("  MAIN_CLASS: ${config.mainClass}")
-        checkAndDownloadBundle()
+
+        startJob?.cancel()
+        retryJob?.cancel()
+        _state.value = null
+        startJob = scope.launch {
+            bootstrap.validateAndLaunch().collect { event ->
+                when (event) {
+                    is BundleStartEvent.Progress.Validating -> {
+                        log("Validating existing bundle...")
+                    }
+                    is BundleStartEvent.Progress.Downloading -> {
+                        val percent = event.progress.percentCompleteInt
+                        log("Download progress: $percent%")
+                        window.isVisible = true
+                        updateUi(AppUiState.Downloading(
+                            progress = event.progress.percentComplete,
+                            percentText = "$percent%"
+                        ))
+                    }
+                    is BundleStartEvent.Progress.Launching -> {
+                        log("Launching bundle...")
+                        if (window.isVisible) {
+                            updateUi(AppUiState.Launching)
+                        }
+                    }
+                    is BundleStartEvent.Failed -> {
+                        log("Failed: ${event.reason}, retryable=${event.isRetryable}")
+                        event.cause?.let { log("  Cause: ${it.stackTraceToString()}") }
+                        window.isVisible = true
+                        handleError(event.reason, event.isRetryable)
+                    }
+                    is BundleStartEvent.ShellUpdateRequired -> {
+                        log("Shell update required: current=${event.currentVersion}, required=${event.requiredVersion}")
+                        window.isVisible = true
+                        updateUi(AppUiState.Error("Shell update required. Please update the app.", null))
+                    }
+                }
+            }
+        }
     }
 
     private fun log(message: String) {
@@ -101,148 +113,14 @@ class AppController(
         }
     }
 
-    private suspend fun validateWithTiming(context: String): BundleValidationResult {
-        log("$context: Starting validation...")
-        val validationStartTime = System.currentTimeMillis()
-        var lastPhaseTime = validationStartTime
-        var lastPhase: String? = null
-
-        val result = bootstrap.validate { progress ->
-            val now = System.currentTimeMillis()
-            val phaseName = when (progress) {
-                is BundleBootstrapProgress.LoadingManifest -> "LoadingManifest"
-                is BundleBootstrapProgress.VerifyingSignature -> "VerifyingSignature"
-                is BundleBootstrapProgress.VerifyingFiles -> "VerifyingFiles(${progress.filesVerified}/${progress.totalFiles})"
-                is BundleBootstrapProgress.Complete -> "Complete"
-            }
-
-            if (lastPhase != null) {
-                val phaseDuration = now - lastPhaseTime
-                log("$context:   Phase '$lastPhase' took ${phaseDuration}ms")
-            }
-
-            log("$context:   Progress: $phaseName")
-            lastPhase = phaseName
-            lastPhaseTime = now
+    private fun handleError(message: String, isRetryable: Boolean) {
+        if (!isRetryable) {
+            log("Non-retryable error: $message")
+            updateUi(AppUiState.Error(message, null))
+            return
         }
 
-        val totalValidationTime = System.currentTimeMillis() - validationStartTime
-        log("$context: Validation completed in ${totalValidationTime}ms")
-        return result
-    }
-
-    private fun checkAndDownloadBundle() {
-        scope.launch {
-            log("Checking for existing bundle...")
-            updateUi(AppUiState.Checking)
-
-            val result = validateWithTiming("Initial")
-            log("Validation result: $result")
-
-            when (result) {
-                is BundleValidationResult.Valid -> {
-                    log("Bundle is valid, launching...")
-                    launchBundle(result)
-                }
-                is BundleValidationResult.NoBundleExists -> {
-                    log("No bundle exists, starting download...")
-                    startDownload()
-                }
-                is BundleValidationResult.Failed -> {
-                    log("Bundle validation failed: ${result.reason}, starting download...")
-                    startDownload()
-                }
-                is BundleValidationResult.NetworkError -> {
-                    log("Network error during validation: ${result.message}")
-                    handleDownloadError("Network error: ${result.message}")
-                }
-                is BundleValidationResult.ShellUpdateRequired -> {
-                    log("Shell update required: requiredVersion=${result.requiredVersion}, currentVersion=${result.currentVersion}")
-                    handleDownloadError("Shell update required. Please update the app.")
-                }
-            }
-        }
-    }
-
-    private fun startDownload() {
-        downloadJob?.cancel()
-        retryJob?.cancel()
-
-        downloadJob = scope.launch {
-            log("Starting download...")
-            updateUi(AppUiState.Downloading(0f, "0%"))
-
-            try {
-                log("Calling updater.downloadLatest() on IO dispatcher...")
-                log("  Updater config: baseUrl=${config.baseUrl}, appId=${config.appId}")
-                val result = withContext(Dispatchers.IO) {
-                    log("  Inside IO dispatcher, calling downloadLatest...")
-                    val res = updater.downloadLatest { progress: DownloadProgress ->
-                        val percent = progress.percentCompleteInt
-                        log("Download progress: $percent% (${progress.bytesDownloaded}/${progress.totalBytes} bytes, file: ${progress.currentFile})")
-                        updateUi(AppUiState.Downloading(
-                            progress = progress.percentComplete,
-                            percentText = "$percent%"
-                        ))
-                    }
-                    log("  downloadLatest returned: $res")
-                    res
-                }
-
-                log("Download result: $result")
-
-                when (result) {
-                    is DownloadResult.Success -> {
-                        log("Download successful, build number: ${result.buildNumber}")
-                        currentRetryDelay = config.initialRetryDelay
-                        // Re-validate to get the Valid result needed for launch
-                        when (val validationResult = validateWithTiming("Post-download")) {
-                            is BundleValidationResult.Valid -> {
-                                log("Post-download validation successful")
-                                launchBundle(validationResult)
-                            }
-                            else -> {
-                                log("Post-download validation failed: $validationResult")
-                                handleDownloadError("Downloaded bundle failed validation")
-                            }
-                        }
-                    }
-                    is DownloadResult.Failure -> {
-                        log("Download failed: ${result.error}")
-                        result.cause?.let { log("  Cause: ${it.stackTraceToString()}") }
-                        handleDownloadError(result.error)
-                    }
-                    is DownloadResult.Cancelled -> {
-                        log("Download was cancelled")
-                        // Download was cancelled, do nothing
-                    }
-                    is DownloadResult.AlreadyUpToDate -> {
-                        log("Already up to date, re-validating...")
-                        // Already up to date, re-validate and launch
-                        when (val validationResult = validateWithTiming("AlreadyUpToDate")) {
-                            is BundleValidationResult.Valid -> {
-                                log("Validation successful, launching...")
-                                launchBundle(validationResult)
-                            }
-                            else -> {
-                                log("Validation failed after AlreadyUpToDate: $validationResult")
-                                handleDownloadError("Bundle validation failed after update check")
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                log("Exception during download: ${e.message}")
-                log("  Stack trace: ${e.stackTraceToString()}")
-                if (isActive) {
-                    handleDownloadError(e.message ?: "Unknown error occurred")
-                }
-            }
-        }
-    }
-
-    private fun handleDownloadError(message: String) {
-        log("Handling error: $message")
+        log("Handling retryable error: $message")
         val retrySeconds = currentRetryDelay.inWholeSeconds.toInt()
         log("Will retry in $retrySeconds seconds")
         updateUi(AppUiState.Error(message, retrySeconds))
@@ -260,8 +138,8 @@ class AppController(
 
             if (isActive) {
                 currentRetryDelay = minOf(currentRetryDelay * 2, config.maxRetryDelay)
-                log("Retrying download (next delay will be $currentRetryDelay)...")
-                startDownload()
+                log("Retrying (next delay will be $currentRetryDelay)...")
+                start()
             }
         }
     }
@@ -270,35 +148,14 @@ class AppController(
         log("Manual retry requested")
         retryJob?.cancel()
         currentRetryDelay = config.initialRetryDelay
-        startDownload()
-    }
-
-    private fun launchBundle(validation: BundleValidationResult.Valid) {
-        log("Launching bundle...")
-        log("  Manifest: ${validation.manifest}")
-        log("  Version path: ${validation.versionPath}")
-        updateUi(AppUiState.Launching)
-
-        if (launchAction != null) {
-            launchAction.invoke(validation)
-        } else {
-            try {
-                bootstrap.launch(validation)
-                log("Launch successful")
-                // Hide the shell window - the bundle is now running
-                window.isVisible = false
-            } catch (e: Exception) {
-                log("Launch failed: ${e.message}")
-                log("  Stack trace: ${e.stackTraceToString()}")
-                handleDownloadError("Failed to launch: ${e.message}")
-                return
-            }
-        }
+        start()
     }
 
     fun shutdown() {
         log("Shutting down...")
+        startJob?.cancel()
+        retryJob?.cancel()
         scope.cancel()
-        updater.close()
+        bootstrap.close()
     }
 }
