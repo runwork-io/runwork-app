@@ -5,7 +5,6 @@ import io.runwork.app.shell.AppController
 import io.runwork.app.ui.AppWindow
 import java.io.File
 import javax.swing.SwingUtilities
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Manual test entry point for the bundle update flow.
@@ -41,7 +40,6 @@ fun main(args: Array<String>) {
             mainClass = "testbundle.bundle1.Main",
             appId = "io.runwork.app.desktop",
             appDataDir = storageDir.toPath(),
-            updateCheckInterval = 5.seconds,
         )
         val window = AppWindow()
         val controller = AppController(
@@ -49,7 +47,6 @@ fun main(args: Array<String>) {
             config = config,
         )
 
-        window.isVisible = true
         controller.start()
     }
 }
