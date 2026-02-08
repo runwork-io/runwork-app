@@ -14,6 +14,8 @@ import javax.swing.JPanel
 import javax.swing.SwingConstants
 import javax.swing.SwingUtilities
 import javax.swing.WindowConstants
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,6 +34,11 @@ object Main {
         SwingUtilities.invokeLater {
             val frame = JFrame("Test Bundle")
             frame.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
+            frame.addWindowListener(object : WindowAdapter() {
+                override fun windowClosed(e: WindowEvent?) {
+                    exitProcess(0)
+                }
+            })
             frame.preferredSize = Dimension(400, 300)
 
             val label = JLabel("Bundle v1 - Build #1", SwingConstants.CENTER)
@@ -73,5 +80,7 @@ object Main {
                 }
             }
         }
+
+        Thread.currentThread().join()
     }
 }
