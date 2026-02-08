@@ -5,7 +5,6 @@ import io.runwork.bundle.bootstrap.BundleBootstrap
 import io.runwork.bundle.bootstrap.BundleBootstrapConfig
 import io.runwork.bundle.bootstrap.BundleBootstrapProgress
 import io.runwork.bundle.bootstrap.BundleValidationResult
-import io.runwork.bundle.updater.BundleUpdateEvent
 import io.runwork.bundle.updater.BundleUpdater
 import io.runwork.bundle.updater.BundleUpdaterConfig
 import io.runwork.bundle.updater.download.DownloadProgress
@@ -74,17 +73,11 @@ class AppController(
 
     private var downloadJob: Job? = null
     private var retryJob: Job? = null
-    private var updateCheckJob: Job? = null
     private var currentRetryDelay = config.initialRetryDelay
-    private var lastProgressTime = 0L
-    private var currentBuildNumber: Long = 0L
 
     init {
         window.retryButton.addActionListener {
             retryNow()
-        }
-        window.restartButton.addActionListener {
-            restartWithUpdate()
         }
     }
 
@@ -285,7 +278,6 @@ class AppController(
         log("  Manifest: ${validation.manifest}")
         log("  Version path: ${validation.versionPath}")
         updateUi(AppUiState.Launching)
-        currentBuildNumber = validation.manifest.buildNumber
 
         if (launchAction != null) {
             launchAction.invoke(validation)
@@ -302,66 +294,10 @@ class AppController(
                 return
             }
         }
-        if (config.enableBackgroundUpdate) {
-            startBackgroundUpdateService()
-        }
-    }
-
-    private fun startBackgroundUpdateService() {
-        updateCheckJob?.cancel()
-        updateCheckJob = scope.launch {
-            val bgUpdaterConfig = if (config.appDataDir != null) {
-                BundleUpdaterConfig(
-                    appDataDir = config.appDataDir,
-                    baseUrl = config.baseUrl,
-                    publicKey = config.publicKey,
-                    currentBuildNumber = currentBuildNumber,
-                    checkInterval = config.updateCheckInterval,
-                )
-            } else {
-                BundleUpdaterConfig(
-                    appId = config.appId,
-                    baseUrl = config.baseUrl,
-                    publicKey = config.publicKey,
-                    currentBuildNumber = currentBuildNumber,
-                    checkInterval = config.updateCheckInterval,
-                )
-            }
-            val bgUpdater = BundleUpdater(bgUpdaterConfig)
-            try {
-                bgUpdater.runInBackground().collect { event ->
-                    when (event) {
-                        is BundleUpdateEvent.UpdateReady -> {
-                            log("Update ready: build #${event.newBuildNumber}")
-                            window.isVisible = true
-                            updateUi(AppUiState.UpdateAvailable(event.newBuildNumber))
-                        }
-                        is BundleUpdateEvent.CleanupComplete -> {
-                            log("Cleanup: removed versions=${event.result.versionsRemoved}, " +
-                                "cas files=${event.result.casFilesRemoved}, " +
-                                "freed=${event.result.bytesFreed} bytes")
-                        }
-                        is BundleUpdateEvent.Error -> {
-                            log("Background update error: ${event.error.message}")
-                        }
-                        else -> {}
-                    }
-                }
-            } finally {
-                bgUpdater.close()
-            }
-        }
-    }
-
-    private fun restartWithUpdate() {
-        log("Restart requested for update")
-        updateCheckJob?.cancel()
-        checkAndDownloadBundle()
     }
 
     fun shutdown() {
         log("Shutting down...")
-        updateCheckJob?.cancel()
         scope.cancel()
         updater.close()
     }
