@@ -22,9 +22,6 @@ class AppWindow : JFrame("Moscow") {
     private val cardLayout = CardLayout()
     private val contentPanel = JPanel(cardLayout)
 
-    // Checking panel
-    private val checkingLabel = JLabel("Checking...")
-
     // Downloading panel
     internal val downloadProgressBar = JProgressBar(0, 100)
     internal val downloadPercentLabel = JLabel("0%")
@@ -34,10 +31,6 @@ class AppWindow : JFrame("Moscow") {
     internal val errorMessageLabel = JLabel()
     internal val retryCountdownLabel = JLabel()
     val retryButton = JButton("Retry Now")
-
-    // Update available panel
-    private val updateBuildLabel = JLabel()
-    val restartButton = JButton("Restart to Update")
 
     // Launching panel
     private val launchingLabel = JLabel("Launching...")
@@ -54,27 +47,13 @@ class AppWindow : JFrame("Moscow") {
 
         contentPanel.background = backgroundColor
 
-        contentPanel.add(createCheckingPanel(), "checking")
         contentPanel.add(createDownloadingPanel(), "downloading")
         contentPanel.add(createErrorPanel(), "error")
-        contentPanel.add(createUpdateAvailablePanel(), "update_available")
         contentPanel.add(createLaunchingPanel(), "launching")
 
         contentPane.add(contentPanel, BorderLayout.CENTER)
         pack()
         setLocationRelativeTo(null)
-    }
-
-    private fun createCheckingPanel(): JPanel {
-        val panel = JPanel(GridBagLayout())
-        panel.background = backgroundColor
-
-        checkingLabel.font = Font("SansSerif", Font.PLAIN, 16)
-        checkingLabel.foreground = foregroundColor
-        checkingLabel.horizontalAlignment = SwingConstants.CENTER
-
-        panel.add(checkingLabel)
-        return panel
     }
 
     private fun createDownloadingPanel(): JPanel {
@@ -157,43 +136,6 @@ class AppWindow : JFrame("Moscow") {
         return panel
     }
 
-    private fun createUpdateAvailablePanel(): JPanel {
-        val panel = JPanel(GridBagLayout())
-        panel.background = backgroundColor
-
-        val gbc = GridBagConstraints()
-        gbc.insets = Insets(8, 32, 8, 32)
-        gbc.gridx = 0
-        gbc.weightx = 1.0
-
-        val titleLabel = JLabel("Update Available")
-        titleLabel.font = Font("SansSerif", Font.BOLD, 18)
-        titleLabel.foreground = primaryColor
-        titleLabel.horizontalAlignment = SwingConstants.CENTER
-
-        gbc.gridy = 0
-        panel.add(titleLabel, gbc)
-
-        updateBuildLabel.font = Font("SansSerif", Font.PLAIN, 14)
-        updateBuildLabel.foreground = foregroundColor
-        updateBuildLabel.horizontalAlignment = SwingConstants.CENTER
-
-        gbc.gridy = 1
-        panel.add(updateBuildLabel, gbc)
-
-        restartButton.font = Font("SansSerif", Font.PLAIN, 14)
-        restartButton.background = primaryColor
-        restartButton.foreground = Color.BLACK
-        restartButton.isFocusPainted = false
-        restartButton.border = BorderFactory.createEmptyBorder(8, 16, 8, 16)
-
-        gbc.gridy = 2
-        gbc.fill = GridBagConstraints.NONE
-        panel.add(restartButton, gbc)
-
-        return panel
-    }
-
     private fun createLaunchingPanel(): JPanel {
         val panel = JPanel(GridBagLayout())
         panel.background = backgroundColor
@@ -208,9 +150,6 @@ class AppWindow : JFrame("Moscow") {
 
     fun updateState(state: AppUiState) {
         when (state) {
-            is AppUiState.Checking -> {
-                cardLayout.show(contentPanel, "checking")
-            }
             is AppUiState.Downloading -> {
                 downloadProgressBar.value = (state.progress * 100).toInt()
                 downloadPercentLabel.text = state.percentText
@@ -224,10 +163,6 @@ class AppWindow : JFrame("Moscow") {
                     ""
                 }
                 cardLayout.show(contentPanel, "error")
-            }
-            is AppUiState.UpdateAvailable -> {
-                updateBuildLabel.text = "Build #${state.newBuildNumber} is ready"
-                cardLayout.show(contentPanel, "update_available")
             }
             is AppUiState.Launching -> {
                 cardLayout.show(contentPanel, "launching")

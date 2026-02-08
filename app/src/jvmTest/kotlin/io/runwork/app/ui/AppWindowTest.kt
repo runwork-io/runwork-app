@@ -27,14 +27,6 @@ class AppWindowTest {
     }
 
     @Test
-    fun `updateState Checking shows checking panel`() {
-        SwingUtilities.invokeAndWait {
-            window.updateState(AppUiState.Checking)
-        }
-        // If no exception, the checking panel is shown via CardLayout
-    }
-
-    @Test
     fun `updateState Downloading sets progress bar and label`() {
         SwingUtilities.invokeAndWait {
             window.updateState(AppUiState.Downloading(0.75f, "75%"))

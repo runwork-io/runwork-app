@@ -17,7 +17,6 @@ fun main() {
         )
         val window = AppWindow()
         val controller = AppController(window, config)
-        window.isVisible = true
         controller.start()
     }
 }

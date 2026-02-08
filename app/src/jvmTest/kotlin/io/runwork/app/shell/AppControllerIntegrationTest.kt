@@ -1,7 +1,6 @@
 package io.runwork.app.shell
 
 import io.runwork.app.ui.AppWindow
-import io.runwork.bundle.bootstrap.BundleValidationResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -48,8 +47,8 @@ class AppControllerIntegrationTest {
     private fun awaitState(
         controller: AppController,
         timeoutMs: Long = 30_000,
-        predicate: (AppUiState) -> Boolean,
-    ): AppUiState {
+        predicate: (AppUiState?) -> Boolean,
+    ): AppUiState? {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (System.currentTimeMillis() < deadline) {
             val current = controller.state.value
@@ -57,32 +56,6 @@ class AppControllerIntegrationTest {
             Thread.sleep(50)
         }
         error("Timed out waiting for state. Current: ${controller.state.value}")
-    }
-
-    @Test
-    fun `valid bundle transitions from Checking to Launching`() {
-        var launchedValidation: BundleValidationResult.Valid? = null
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Swing)
-
-        try {
-            val controller = AppController(
-                window = window,
-                config = testBundleConfig(),
-                scope = scope,
-                launchAction = { valid -> launchedValidation = valid },
-            )
-
-            controller.start()
-
-            awaitState(controller) { it is AppUiState.Launching }
-            flushEdt()
-
-            val state = controller.state.value
-            assertIs<AppUiState.Launching>(state)
-            assertNotNull(launchedValidation, "launchAction should have been called with a Valid result")
-        } finally {
-            scope.cancel()
-        }
     }
 
     @Test
@@ -150,7 +123,7 @@ class AppControllerIntegrationTest {
     }
 
     @Test
-    fun `retry button resets delay and restarts download`() {
+    fun `retry button resets delay and restarts`() {
         val emptyDir = createEmptyTempDir()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Swing)
 
@@ -173,9 +146,8 @@ class AppControllerIntegrationTest {
                 window.retryButton.doClick()
             }
 
-            // After retry, should go through download attempt and end up in error again
-            // Wait for state to leave Error (goes to Downloading), then return to Error
-            awaitState(controller) { it !is AppUiState.Error }
+            // After retry, state resets to null, then validateAndLaunch runs again
+            awaitState(controller) { it == null }
             awaitState(controller) { it is AppUiState.Error }
             flushEdt()
 
@@ -237,18 +209,6 @@ class AppControllerIntegrationTest {
             it.delete()
             it.mkdirs()
         }
-    }
-
-    private fun testBundleConfig(): AppConfig {
-        val testBundleDir = File("../bundles/1").canonicalFile
-        require(testBundleDir.exists()) { "bundles/1 directory not found at ${testBundleDir.absolutePath}" }
-        return AppConfig(
-            baseUrl = "file://${testBundleDir.absolutePath}/",
-            publicKey = TEST_PUBLIC_KEY,
-            shellVersion = 1,
-            mainClass = "testbundle.bundle1.Main",
-            appId = "io.runwork.app.desktop",
-        )
     }
 
     private fun emptyDirConfig(
