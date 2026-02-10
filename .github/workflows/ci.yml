@@ -27,8 +27,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
 
-      - name: Build and test
-        run: xvfb-run ./gradlew build --stacktrace
+      - name: Build
+        run: ./gradlew build -x jvmTest --stacktrace
+
+      - name: Test
+        run: xvfb-run ./gradlew jvmTest --stacktrace
 
       - name: Upload test reports
         if: failure()
