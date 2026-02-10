@@ -28,7 +28,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Build and test
-        run: xvfb-run ./gradlew build --no-daemon --stacktrace
+        run: xvfb-run ./gradlew build --stacktrace
 
       - name: Upload test reports
         if: failure()
