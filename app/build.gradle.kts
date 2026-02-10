@@ -1,8 +1,13 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.conveyor)
 }
 
+version = "0.1.0"
+group = "io.runwork"
+
 kotlin {
+    jvmToolchain(21)
     jvm {
         mainRun {
             mainClass = "io.runwork.app.MainKt"
