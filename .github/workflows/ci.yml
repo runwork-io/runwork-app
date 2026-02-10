@@ -30,8 +30,8 @@ jobs:
       - name: Build and test
         run: xvfb-run ./gradlew build --stacktrace
 
-      - name: Verify Conveyor config
-        run: ./gradlew :app:printConveyorConfig -q
+      - name: Print Conveyor config
+        run: ./gradlew :app:printConveyorConfig
 
       - name: Upload test reports
         if: failure()
