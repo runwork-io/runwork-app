@@ -10,37 +10,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build & Test
-    runs-on: blacksmith-2vcpu-ubuntu-2404
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 25
-        uses: useblacksmith/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 25
-
-      - name: Setup Gradle
-        uses: useblacksmith/setup-gradle/setup-gradle@v7
-
-      - name: Build and test
-        run: xvfb-run ./gradlew build --stacktrace
-
-      - name: Upload test reports
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: "**/build/reports/tests/"
-          retention-days: 7
-
   package:
     name: Build Packages
-    needs: build
     runs-on: blacksmith-2vcpu-ubuntu-2404
 
     steps:
