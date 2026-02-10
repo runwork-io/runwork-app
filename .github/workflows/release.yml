@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: useblacksmith/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Setup Gradle
+        uses: useblacksmith/setup-gradle/setup-gradle@v7
+
+      - name: Build and test
+        run: xvfb-run ./gradlew build --stacktrace
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: "**/build/reports/tests/"
+          retention-days: 7
+
+  package:
+    name: Build Packages
+    needs: build
+    runs-on: blacksmith-2vcpu-ubuntu-2404-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: useblacksmith/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Setup Gradle
+        uses: useblacksmith/setup-gradle/setup-gradle@v7
+
+      - name: Build project
+        run: ./gradlew :app:build --stacktrace
+
+      - name: Build Conveyor packages
+        uses: hydraulic-software/conveyor/actions/build@v21.1
+        with:
+          command: make site
+          signing_key: ${{ secrets.CONVEYOR_SIGNING_KEY }}
+          agree_to_license: 1
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: conveyor-site
+          path: output/
+          retention-days: 7
