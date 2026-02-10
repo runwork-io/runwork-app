@@ -7,7 +7,7 @@ version = "0.1.0"
 group = "io.runwork"
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
     jvm {
         mainRun {
             mainClass = "io.runwork.app.MainKt"
