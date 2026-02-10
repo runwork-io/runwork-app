@@ -35,3 +35,10 @@ jobs:
           name: test-reports
           path: "**/build/reports/tests/"
           retention-days: 7
+
+      - name: Validate Conveyor config
+        uses: hydraulic-software/conveyor/actions/build@v21.1
+        with:
+          command: json
+          signing_key: "not-used-for-config-validation"
+          agree_to_license: 1
