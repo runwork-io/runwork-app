@@ -28,7 +28,7 @@ jobs:
         uses: useblacksmith/setup-gradle/setup-gradle@v7
 
       - name: Build project
-        run: ./gradlew :app:build --stacktrace
+        run: xvfb-run ./gradlew :app:build --stacktrace
 
       - name: Build Conveyor packages
         uses: hydraulic-software/conveyor/actions/build@v21.1
