@@ -10,7 +10,7 @@ concurrency:
 jobs:
   build:
     name: Build & Test
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
 
     steps:
       - name: Checkout
@@ -23,7 +23,7 @@ jobs:
           java-version: 25
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: useblacksmith/setup-gradle/setup-gradle@v7
 
       - name: Build and test
         run: xvfb-run ./gradlew build --stacktrace
