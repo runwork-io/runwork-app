@@ -68,8 +68,11 @@ class AppController(
         startJob = scope.launch {
             bootstrap.validateAndLaunch().collect { event ->
                 when (event) {
-                    is BundleStartEvent.Progress.Validating -> {
-                        log("Validating existing bundle...")
+                    is BundleStartEvent.Progress.ValidatingManifest -> {
+                        log("Validating manifest...")
+                    }
+                    is BundleStartEvent.Progress.ValidatingFiles -> {
+                        log("Validating files: ${event.percentCompleteInt}% (${event.filesVerified}/${event.totalFiles} files)")
                     }
                     is BundleStartEvent.Progress.Downloading -> {
                         val percent = event.progress.percentCompleteInt
